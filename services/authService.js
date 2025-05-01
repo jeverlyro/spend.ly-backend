@@ -83,6 +83,52 @@ class AuthService {
       throw error;
     }
   }
+
+  async googleLogin(profile) {
+    try {
+      // Try to find user by Google ID
+      let user = await userRepository.findUserByGoogleId(profile.id);
+
+      // If user doesn't exist, try to find by email
+      if (!user) {
+        user = await userRepository.findUserByEmail(profile.emails[0].value);
+
+        if (user) {
+          // Update existing user with Google ID
+          user.googleId = profile.id;
+          if (profile.photos && profile.photos.length > 0) {
+            user.photo = profile.photos[0].value;
+          }
+          user = await userRepository.updateUser(user._id, user);
+        } else {
+          // Create new user
+          user = await userRepository.createUser({
+            name: profile.displayName,
+            email: profile.emails[0].value,
+            photo: profile.photos?.[0]?.value,
+            googleId: profile.id,
+            password: Math.random().toString(36).slice(-10), // Random password since they're using Google auth
+          });
+        }
+      }
+
+      // Generate token
+      const token = this.generateToken(user._id);
+
+      return {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          photo: user.photo || "",
+        },
+      };
+    } catch (error) {
+      console.error("Google login error:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new AuthService();

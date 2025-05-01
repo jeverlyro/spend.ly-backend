@@ -5,6 +5,9 @@ const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 const cors = require("cors");
 const connectDB = require("./config/db");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const authService = require("./services/authService");
 
 // Load environment variables
 require("dotenv").config();
@@ -35,10 +38,76 @@ app.use((req, res, next) => {
   next();
 });
 
+// Initialize Passport
+app.use(passport.initialize());
+
+// Configure Google Strategy
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:5000/api/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const userData = await authService.googleLogin(profile);
+        return done(null, userData);
+      } catch (error) {
+        return done(error);
+      }
+    }
+  )
+);
+
 // Routes
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/api/auth", authRouter);
+
+// Google auth routes
+app.get(
+  "/api/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+app.get(
+  "/api/auth/google/callback",
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: "http://localhost:3000/login?error=google_auth_failed",
+  }),
+  (req, res) => {
+    try {
+      // Successful authentication, get userData from passport
+      const userData = req.user;
+
+      if (!userData || !userData.token) {
+        console.error("Google auth: Missing user data or token");
+        return res.redirect(
+          "http://localhost:3000/login?error=missing_user_data"
+        );
+      }
+
+      // Log successful authentication
+      console.log(`Google auth successful for: ${userData.user.email}`);
+
+      // Redirect to frontend with token and user data
+      const redirectUrl = `http://localhost:3000/auth/callback?token=${
+        userData.token
+      }&name=${encodeURIComponent(
+        userData.user.name
+      )}&email=${encodeURIComponent(
+        userData.user.email
+      )}&photo=${encodeURIComponent(userData.user.photo || "")}`;
+
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error("Google callback error:", error);
+      res.redirect("http://localhost:3000/login?error=callback_error");
+    }
+  }
+);
 
 // 404 handler
 app.use((req, res, next) => {

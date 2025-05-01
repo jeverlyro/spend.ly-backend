@@ -20,6 +20,10 @@ class UserRepository {
       { new: true, runValidators: true }
     ).select("-password");
   }
+
+  async findUserByGoogleId(googleId) {
+    return await User.findOne({ googleId });
+  }
 }
 
 module.exports = new UserRepository();
