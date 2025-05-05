@@ -12,7 +12,7 @@ class EmailService {
   }
 
   async sendSupportTicket(data) {
-    const { subject, message, category, email, name } = data;
+    const { subject, message, category, email, name, attachment } = data;
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -30,6 +30,16 @@ class EmailService {
         <p>${message.replace(/\n/g, "<br>")}</p>
       `,
     };
+
+    // Add attachment if it exists
+    if (attachment) {
+      mailOptions.attachments = [
+        {
+          filename: attachment.originalname,
+          content: attachment.buffer,
+        },
+      ];
+    }
 
     try {
       const info = await this.transporter.sendMail(mailOptions);
