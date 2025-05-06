@@ -4,6 +4,7 @@ const otpService = require("../services/otpService");
 const emailService = require("../services/emailService");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
+const User = require("../models/User");
 
 class AuthController {
   async register(req, res) {
@@ -20,14 +21,11 @@ class AuthController {
           .json({ message: "Kata sandi minimal 8 karakter" });
       }
 
-      // Register user but don't generate token yet
       const result = await authService.registerUser({ name, email, password });
 
-      // Generate and send OTP
       const otp = await otpService.createOTP(result.user.id);
       await otpService.sendVerificationEmail(result.user, otp);
 
-      // Return success but don't include token
       res.status(201).json({
         success: true,
         message: "User registered successfully. Verification email sent.",
@@ -53,12 +51,9 @@ class AuthController {
           .json({ message: "Email dan kata sandi diperlukan" });
       }
 
-      // Check if user exists and password is correct
       const user = await authService.validateCredentials(email, password);
 
-      // Check if user is verified
       if (!user.isVerified) {
-        // Generate new OTP
         const otp = await otpService.createOTP(user._id);
         await otpService.sendVerificationEmail(user, otp);
 
@@ -70,7 +65,6 @@ class AuthController {
         });
       }
 
-      // Generate token and return user data
       const token = authService.generateToken(user._id);
 
       res.status(200).json({
@@ -99,7 +93,6 @@ class AuthController {
         });
       }
 
-      // Find user by email
       const user = await userRepository.findUserByEmail(email);
 
       if (!user) {
@@ -109,7 +102,6 @@ class AuthController {
         });
       }
 
-      // Check if OTP is valid and not expired
       if (user.verificationCode !== otp) {
         return res.status(400).json({
           success: false,
@@ -124,7 +116,6 @@ class AuthController {
         });
       }
 
-      // Mark user as verified
       user.isVerified = true;
       user.verificationCode = null;
       user.verificationCodeExpires = null;
@@ -151,25 +142,20 @@ class AuthController {
         return res.status(400).json({ message: "Email is required" });
       }
 
-      // Find user by email
       const user = await userRepository.findUserByEmail(email);
 
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Generate a 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Set expiration time to 15 minutes from now
       const otpExpiry = Date.now() + 15 * 60 * 1000;
 
-      // Update user record with new OTP and expiry
       user.verificationCode = otp;
       user.verificationCodeExpires = otpExpiry;
       await user.save();
 
-      // Send verification email
       await emailService.sendVerificationEmail(user.email, user.name, otp);
 
       return res.status(200).json({
@@ -234,27 +220,22 @@ class AuthController {
         return res.status(400).json({ message: "Email is required" });
       }
 
-      // Find user by email
       const user = await userRepository.findUserByEmail(email);
 
       if (!user) {
-        // For security reasons, don't reveal that the user doesn't exist
         return res.status(200).json({
           success: true,
           message: "If your email exists, a reset link has been sent.",
         });
       }
 
-      // Generate reset token
       const resetToken = crypto.randomBytes(32).toString("hex");
-      const resetTokenExpiry = Date.now() + 60 * 60 * 1000; // 1 hour
+      const resetTokenExpiry = Date.now() + 60 * 60 * 1000;
 
-      // Save token to user
       user.resetPasswordToken = resetToken;
       user.resetPasswordExpires = resetTokenExpiry;
       await user.save();
 
-      // Send reset email
       const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
       await emailService.sendPasswordResetEmail(
         user.email,
@@ -293,7 +274,6 @@ class AuthController {
         });
       }
 
-      // Find user with valid reset token
       const user = await User.findOne({
         resetPasswordToken: token,
         resetPasswordExpires: { $gt: Date.now() },
@@ -306,17 +286,14 @@ class AuthController {
         });
       }
 
-      // Update password
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(password, salt);
+      // Simply set the password - the pre-save middleware will hash it
+      user.password = password;
 
-      // Clear reset token fields
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
 
       await user.save();
 
-      // Send confirmation email
       await emailService.sendPasswordChangeConfirmationEmail(
         user.email,
         user.name

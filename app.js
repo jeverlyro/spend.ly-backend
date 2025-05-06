@@ -106,8 +106,8 @@ app.get(
   }
 );
 
-app.post("/auth/forgot-password", authController.forgotPassword);
-app.post("/auth/reset-password", authController.resetPassword);
+app.post("/api/auth/forgot-password", authController.forgotPassword);
+app.post("/api/auth/reset-password", authController.resetPassword);
 
 app.use((req, res, next) => {
   console.log(`404 Not Found: ${req.method} ${req.originalUrl}`);
