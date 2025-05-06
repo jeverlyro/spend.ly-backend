@@ -4,7 +4,6 @@ const emailService = require("./emailService");
 
 class OtpService {
   generateOTP() {
-    // Generate a 6-digit OTP
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
@@ -12,7 +11,7 @@ class OtpService {
     try {
       const otp = this.generateOTP();
       const expiration = new Date();
-      expiration.setMinutes(expiration.getMinutes() + 10); // OTP valid for 10 minutes
+      expiration.setMinutes(expiration.getMinutes() + 10);
 
       await User.findByIdAndUpdate(userId, {
         verificationCode: otp,
@@ -38,7 +37,6 @@ class OtpService {
         return false;
       }
 
-      // Mark user as verified and clear OTP
       user.isVerified = true;
       user.verificationCode = null;
       user.verificationCodeExpires = null;
@@ -53,7 +51,6 @@ class OtpService {
 
   async sendVerificationEmail(user, otp) {
     try {
-      // Pass parameters correctly: email, name, otp
       await emailService.sendVerificationEmail(user.email, user.name, otp);
 
       return true;

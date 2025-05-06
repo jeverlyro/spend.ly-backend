@@ -10,7 +10,6 @@ class AuthService {
 
   async registerUser(userData) {
     try {
-      // Check if user already exists
       const existingUser = await userRepository.findUserByEmail(userData.email);
 
       if (existingUser) {
@@ -37,14 +36,12 @@ class AuthService {
   }
 
   async validateCredentials(email, password) {
-    // Find user
     const user = await userRepository.findUserByEmail(email);
 
     if (!user) {
       throw new Error("Email atau kata sandi tidak valid");
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
@@ -58,9 +55,6 @@ class AuthService {
     try {
       const user = await this.validateCredentials(email, password);
 
-      // Note: Verification check is now done in the controller
-
-      // Generate token
       const token = this.generateToken(user._id);
 
       return {

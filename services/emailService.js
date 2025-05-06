@@ -31,7 +31,6 @@ class EmailService {
       `,
     };
 
-    // Add attachment if it exists
     if (attachment) {
       mailOptions.attachments = [
         {
