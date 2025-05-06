@@ -1,21 +1,21 @@
-const complaintServices = require("../repositories/complaintRepository");
+const complaintRepository = require("../repositories/complaintRepository");
 
 exports.getComplaintData = async () => {
-  return await complaintServices.getAllComplaints();
+  return await complaintRepository.getAllComplaints();
 };
 
 exports.getUserComplaints = async (userId) => {
-  return await complaintServices.getComplaintsByUser(userId);
+  return await complaintRepository.getComplaintsByUser(userId);
 };
 
 exports.addComplaintData = async (complaintData) => {
-  return await complaintServices.createComplaint(complaintData);
+  return await complaintRepository.createComplaint(complaintData);
 };
 
 exports.updateComplaintStatus = async (id, status) => {
-  return await complaintServices.updateComplaintStatus(id, status);
+  return await complaintRepository.updateComplaintStatus(id, status);
 };
 
 exports.removeComplaintData = async (id) => {
-  return await complaintServices.deleteComplaint(id);
+  return await complaintRepository.deleteComplaint(id);
 };
