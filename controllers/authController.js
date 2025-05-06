@@ -6,7 +6,6 @@ class AuthController {
     try {
       const { name, email, password } = req.body;
 
-      // Validate input
       if (!name || !email || !password) {
         return res.status(400).json({ message: "Semua bidang harus diisi" });
       }
@@ -29,7 +28,6 @@ class AuthController {
     try {
       const { email, password } = req.body;
 
-      // Validate input
       if (!email || !password) {
         return res
           .status(400)

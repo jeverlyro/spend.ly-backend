@@ -13,35 +13,36 @@ const indexRouter = require("./routes/index"); // Keep this declaration
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/authRoutes");
 
-// Load environment variables
 require("dotenv").config();
 
-// Connect to database
 connectDB();
+
+const indexRouter = require("./routes/index");
+const usersRouter = require("./routes/users");
+const authRouter = require("./routes/authRoutes");
+const supportRouter = require("./routes/supportRoutes");
+const walletRoutes = require("./routes/walletRoutes");
 
 const app = express();
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
 
-// Middleware
 app.use(cors());
 app.use(logger("dev"));
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json());
 
-// Debug middleware to log all incoming requests
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
 });
 
-// Initialize Passport
 app.use(passport.initialize());
 
-// Configure Google Strategy
 passport.use(
   new GoogleStrategy(
     {
@@ -60,13 +61,12 @@ passport.use(
   )
 );
 
-// Routes
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/accounts", accountRoutes);
+app.use("/api/support", supportRouter);
+app.use("/api", walletRoutes);
 
-// Google auth routes
 app.get(
   "/api/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
@@ -107,17 +107,11 @@ app.get(
   }
 );
 
-// 404 handler
 app.use((req, res, next) => {
   console.log(`404 Not Found: ${req.method} ${req.originalUrl}`);
   next(createError(404));
 });
 
-app.use((req, res, next) => {
-  res.status(404).json({ message: "Not Found" });
-});
-
-// Error handler
 app.use((err, req, res, next) => {
   console.error(`Error ${err.status || 500}: ${err.message}`);
   console.error(`Request path: ${req.path}`);
