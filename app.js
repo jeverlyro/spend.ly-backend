@@ -8,8 +8,7 @@ const connectDB = require("./config/db");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const authService = require("./services/authService");
-const accountRoutes = require("./routes/accountRoutes");
-const indexRouter = require("./routes/index"); // Keep this declaration
+const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
 const authRouter = require("./routes/authRoutes");
 
