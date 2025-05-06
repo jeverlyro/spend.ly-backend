@@ -8,6 +8,7 @@ const connectDB = require("./config/db");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const authService = require("./services/authService");
+const transactionRoutes = require("./routes/transactionRoutes");
 
 require("dotenv").config();
 
@@ -62,6 +63,7 @@ app.use("/users", usersRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/support", supportRouter);
 app.use("/api", walletRoutes);
+app.use("/api", transactionRoutes);
 
 app.get(
   "/api/auth/google",
