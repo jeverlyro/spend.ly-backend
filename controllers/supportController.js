@@ -6,16 +6,13 @@ const upload = multer({
 }).single("attachment");
 
 exports.submitSupportTicket = async (req, res) => {
-  // Use multer to handle file uploads
   upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
-      // A multer error occurred when uploading
       return res.status(400).json({
         success: false,
         message: "File upload error: " + err.message,
       });
     } else if (err) {
-      // An unknown error occurred
       return res.status(500).json({
         success: false,
         message: "Unknown error during file upload",
@@ -25,7 +22,6 @@ exports.submitSupportTicket = async (req, res) => {
     try {
       const { subject, message, category } = req.body;
 
-      // Basic validation
       if (!subject || !message || !category) {
         return res.status(400).json({
           success: false,
@@ -47,7 +43,6 @@ exports.submitSupportTicket = async (req, res) => {
         attachment,
       });
 
-      // Always return a response
       return res.status(200).json({
         success: true,
         message: "Support ticket submitted successfully",
