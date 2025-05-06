@@ -18,6 +18,15 @@ const usersRouter = require("./routes/users");
 const authRouter = require("./routes/authRoutes");
 const supportRouter = require("./routes/supportRoutes");
 const walletRoutes = require("./routes/walletRoutes");
+const complaintRoutes = require("./routes/complaintRoutes");
+const incomeRoutes = require("./routes/incomeRoutes");
+const expenseRoutes = require("./routes/expenseRoutes");
+
+app.use(express.json());
+
+// Daftarkan API
+app.use("/api/incomes", incomeRoutes);
+app.use("/api/expenses", expenseRoutes);
 
 const app = express();
 
@@ -57,11 +66,16 @@ passport.use(
   )
 );
 
+
+// Daftarkan API
+app.use("/api/incomes", incomeRoutes);
+app.use("/api/expenses", expenseRoutes);
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/support", supportRouter);
 app.use("/api", walletRoutes);
+app.use("/api/complaints", complaintRoutes);
 
 app.get(
   "/api/auth/google",
