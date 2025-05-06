@@ -53,26 +53,8 @@ class OtpService {
 
   async sendVerificationEmail(user, otp) {
     try {
-      await emailService.sendMail({
-        to: user.email,
-        subject: "Verifikasi Email Spend.ly",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #0070f3; text-align: center;">Spend.ly</h2>
-            <h3 style="text-align: center;">Verifikasi Email Anda</h3>
-            <p>Halo ${user.name},</p>
-            <p>Terima kasih telah mendaftar di Spend.ly. Untuk menyelesaikan proses pendaftaran, silakan masukkan kode verifikasi berikut:</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <div style="font-size: 24px; letter-spacing: 8px; font-weight: bold; background-color: #f5f5f5; padding: 15px; border-radius: 8px; display: inline-block;">${otp}</div>
-            </div>
-            <p>Kode ini akan kedaluwarsa dalam 10 menit.</p>
-            <p>Jika Anda tidak mendaftar di Spend.ly, silakan abaikan email ini.</p>
-            <p style="margin-top: 30px; color: #718096; font-size: 12px; text-align: center;">
-              © ${new Date().getFullYear()} Spend.ly. All rights reserved.
-            </p>
-          </div>
-        `,
-      });
+      // Pass parameters correctly: email, name, otp
+      await emailService.sendVerificationEmail(user.email, user.name, otp);
 
       return true;
     } catch (error) {

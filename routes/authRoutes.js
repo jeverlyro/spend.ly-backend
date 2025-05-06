@@ -6,7 +6,7 @@ const router = express.Router();
 // Public routes
 router.post("/register", authController.register);
 router.post("/login", authController.login);
-router.post("/resend-otp", authController.resendOTP);
+router.post("/resend-otp", authController.resendOtp); // Change to lowercase "p"
 router.post("/verify-email", authController.verifyEmail);
 
 // Protected routes

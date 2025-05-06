@@ -9,6 +9,7 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const authService = require("./services/authService");
 const transactionRoutes = require("./routes/transactionRoutes");
+const authController = require("./controllers/authController");
 
 require("dotenv").config();
 
@@ -104,6 +105,9 @@ app.get(
     }
   }
 );
+
+app.post("/auth/forgot-password", authController.forgotPassword);
+app.post("/auth/reset-password", authController.resetPassword);
 
 app.use((req, res, next) => {
   console.log(`404 Not Found: ${req.method} ${req.originalUrl}`);
