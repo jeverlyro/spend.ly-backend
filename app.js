@@ -1,5 +1,6 @@
 const createError = require("http-errors");
 const express = require("express");
+const app = express();
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
@@ -24,11 +25,7 @@ const expenseRoutes = require("./routes/expenseRoutes");
 
 app.use(express.json());
 
-// Daftarkan API
-app.use("/api/incomes", incomeRoutes);
-app.use("/api/expenses", expenseRoutes);
 
-const app = express();
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
