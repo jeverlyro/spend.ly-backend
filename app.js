@@ -8,9 +8,6 @@ const connectDB = require("./config/db");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const authService = require("./services/authService");
-const indexRouter = require("./routes/index");
-const usersRouter = require("./routes/users");
-const authRouter = require("./routes/authRoutes");
 
 require("dotenv").config();
 
