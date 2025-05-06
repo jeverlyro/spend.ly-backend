@@ -16,7 +16,6 @@ class AuthService {
         throw new Error("Email sudah terdaftar");
       }
 
-      // Create new user (without setting isVerified)
       const user = await userRepository.createUser({
         ...userData,
         isVerified: false,
@@ -87,36 +86,30 @@ class AuthService {
 
   async googleLogin(profile) {
     try {
-      // Try to find user by Google ID
       let user = await userRepository.findUserByGoogleId(profile.id);
 
-      // If user doesn't exist, try to find by email
       if (!user) {
         user = await userRepository.findUserByEmail(profile.emails[0].value);
 
         if (user) {
-          // Update existing user with Google ID
           user.googleId = profile.id;
           if (profile.photos && profile.photos.length > 0) {
             user.photo = profile.photos[0].value;
           }
-          // Set as verified since it's Google auth
           user.isVerified = true;
           user = await userRepository.updateUser(user._id, user);
         } else {
-          // Create new user
           user = await userRepository.createUser({
             name: profile.displayName,
             email: profile.emails[0].value,
             photo: profile.photos?.[0]?.value,
             googleId: profile.id,
-            password: Math.random().toString(36).slice(-10), // Random password since they're using Google auth
-            isVerified: true, // Set as verified since it's Google auth
+            password: Math.random().toString(36).slice(-10),
+            isVerified: true,
           });
         }
       }
 
-      // Generate token
       const token = this.generateToken(user._id);
 
       return {

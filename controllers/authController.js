@@ -286,7 +286,6 @@ class AuthController {
         });
       }
 
-      // Simply set the password - the pre-save middleware will hash it
       user.password = password;
 
       user.resetPasswordToken = undefined;

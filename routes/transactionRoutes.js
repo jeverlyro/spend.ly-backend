@@ -3,7 +3,6 @@ const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
 const Transaction = require("../models/transaction");
 
-// Get all transactions for the logged-in user
 router.get("/transactions", protect, async (req, res) => {
   try {
     const transactions = await Transaction.find({ userId: req.user.id }).sort({
@@ -16,7 +15,6 @@ router.get("/transactions", protect, async (req, res) => {
   }
 });
 
-// Get a specific transaction by ID
 router.get("/transactions/:id", protect, async (req, res) => {
   try {
     const transaction = await Transaction.findOne({
@@ -35,17 +33,14 @@ router.get("/transactions/:id", protect, async (req, res) => {
   }
 });
 
-// Add a new transaction
 router.post("/transactions", protect, async (req, res) => {
   try {
     const { title, amount, category, date } = req.body;
 
-    // Validate input
     if (!title || amount === undefined || !category) {
       return res.status(400).json({ message: "Semua field harus diisi" });
     }
 
-    // Create new transaction
     const newTransaction = new Transaction({
       userId: req.user.id,
       title,
@@ -65,7 +60,6 @@ router.post("/transactions", protect, async (req, res) => {
   }
 });
 
-// Update a transaction
 router.put("/transactions/:id", protect, async (req, res) => {
   try {
     const { title, amount, category, date } = req.body;
@@ -96,7 +90,6 @@ router.put("/transactions/:id", protect, async (req, res) => {
   }
 });
 
-// Delete a transaction
 router.delete("/transactions/:id", protect, async (req, res) => {
   try {
     const transaction = await Transaction.findOneAndDelete({
