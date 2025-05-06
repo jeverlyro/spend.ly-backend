@@ -61,7 +61,7 @@ app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/support", supportRouter);
-app.use("/wallet", walletRoutes);
+app.use("/api", walletRoutes);
 
 app.get(
   "/api/auth/google",
