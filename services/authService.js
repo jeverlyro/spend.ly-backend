@@ -17,14 +17,13 @@ class AuthService {
         throw new Error("Email sudah terdaftar");
       }
 
-      // Create new user
-      const user = await userRepository.createUser(userData);
-
-      // Generate token
-      const token = this.generateToken(user._id);
+      // Create new user (without setting isVerified)
+      const user = await userRepository.createUser({
+        ...userData,
+        isVerified: false,
+      });
 
       return {
-        token,
         user: {
           id: user._id,
           name: user.name,
@@ -37,21 +36,29 @@ class AuthService {
     }
   }
 
+  async validateCredentials(email, password) {
+    // Find user
+    const user = await userRepository.findUserByEmail(email);
+
+    if (!user) {
+      throw new Error("Email atau kata sandi tidak valid");
+    }
+
+    // Check password
+    const isMatch = await user.comparePassword(password);
+
+    if (!isMatch) {
+      throw new Error("Email atau kata sandi tidak valid");
+    }
+
+    return user;
+  }
+
   async loginUser(email, password) {
     try {
-      // Find user
-      const user = await userRepository.findUserByEmail(email);
+      const user = await this.validateCredentials(email, password);
 
-      if (!user) {
-        throw new Error("Email atau kata sandi tidak valid");
-      }
-
-      // Check password
-      const isMatch = await user.comparePassword(password);
-
-      if (!isMatch) {
-        throw new Error("Email atau kata sandi tidak valid");
-      }
+      // Note: Verification check is now done in the controller
 
       // Generate token
       const token = this.generateToken(user._id);
@@ -99,6 +106,8 @@ class AuthService {
           if (profile.photos && profile.photos.length > 0) {
             user.photo = profile.photos[0].value;
           }
+          // Set as verified since it's Google auth
+          user.isVerified = true;
           user = await userRepository.updateUser(user._id, user);
         } else {
           // Create new user
@@ -108,6 +117,7 @@ class AuthService {
             photo: profile.photos?.[0]?.value,
             googleId: profile.id,
             password: Math.random().toString(36).slice(-10), // Random password since they're using Google auth
+            isVerified: true, // Set as verified since it's Google auth
           });
         }
       }

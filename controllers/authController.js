@@ -1,5 +1,8 @@
 const authService = require("../services/authService");
 const userRepository = require("../repositories/userRepository");
+const otpService = require("../services/otpService");
+const emailService = require("../services/emailService");
+const crypto = require("crypto");
 
 class AuthController {
   async register(req, res) {
@@ -16,8 +19,23 @@ class AuthController {
           .json({ message: "Kata sandi minimal 8 karakter" });
       }
 
+      // Register user but don't generate token yet
       const result = await authService.registerUser({ name, email, password });
-      res.status(201).json(result);
+
+      // Generate and send OTP
+      const otp = await otpService.createOTP(result.user.id);
+      await otpService.sendVerificationEmail(result.user, otp);
+
+      // Return success but don't include token
+      res.status(201).json({
+        success: true,
+        message: "User registered successfully. Verification email sent.",
+        user: {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+        },
+      });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(400).json({ message: error.message || "Registrasi gagal" });
@@ -34,11 +52,135 @@ class AuthController {
           .json({ message: "Email dan kata sandi diperlukan" });
       }
 
-      const result = await authService.loginUser(email, password);
-      res.status(200).json(result);
+      // Check if user exists and password is correct
+      const user = await authService.validateCredentials(email, password);
+
+      // Check if user is verified
+      if (!user.isVerified) {
+        // Generate new OTP
+        const otp = await otpService.createOTP(user._id);
+        await otpService.sendVerificationEmail(user, otp);
+
+        return res.status(401).json({
+          message:
+            "Email belum diverifikasi. Kode verifikasi baru telah dikirim.",
+          requiresVerification: true,
+          email: user.email,
+        });
+      }
+
+      // Generate token and return user data
+      const token = authService.generateToken(user._id);
+
+      res.status(200).json({
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          photo: user.photo,
+        },
+      });
     } catch (error) {
       console.error("Login error:", error);
       res.status(401).json({ message: error.message || "Otentikasi gagal" });
+    }
+  }
+
+  async verifyEmail(req, res) {
+    try {
+      const { email, otp } = req.body;
+
+      if (!email || !otp) {
+        return res.status(400).json({
+          success: false,
+          message: "Email and verification code are required",
+        });
+      }
+
+      // Find user by email
+      const user = await userRepository.findUserByEmail(email);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      // Check if OTP is valid and not expired
+      if (user.verificationCode !== otp) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid verification code",
+        });
+      }
+
+      if (user.verificationCodeExpires < Date.now()) {
+        return res.status(400).json({
+          success: false,
+          message: "Verification code has expired",
+        });
+      }
+
+      // Mark user as verified
+      user.isVerified = true;
+      user.verificationCode = null;
+      user.verificationCodeExpires = null;
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Email verified successfully",
+      });
+    } catch (error) {
+      console.error("Email verification error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Email verification failed: " + error.message,
+      });
+    }
+  }
+
+  async resendOtp(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Find user by email
+      const user = await userRepository.findUserByEmail(email);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Generate a 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Set expiration time to 15 minutes from now
+      const otpExpiry = Date.now() + 15 * 60 * 1000;
+
+      // Update user record with new OTP and expiry
+      user.verificationCode = otp;
+      user.verificationCodeExpires = otpExpiry;
+      await user.save();
+
+      // Send verification email
+      await emailService.sendVerificationEmail(user.email, user.name, otp);
+
+      return res.status(200).json({
+        success: true,
+        message: "Verification code sent successfully",
+      });
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send verification code: " + error.message,
+      });
     }
   }
 
