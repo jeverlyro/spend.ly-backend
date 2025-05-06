@@ -46,7 +46,9 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:5000/api/auth/google/callback",
+      callbackURL: `${
+        process.env.BACKEND_URL || "http://localhost:5000"
+      }/api/auth/google/callback`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -75,7 +77,9 @@ app.get(
   "/api/auth/google/callback",
   passport.authenticate("google", {
     session: false,
-    failureRedirect: "http://localhost:3000/login?error=google_auth_failed",
+    failureRedirect: `${
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    }/login?error=google_auth_failed`,
   }),
   (req, res) => {
     try {
@@ -84,13 +88,16 @@ app.get(
       if (!userData || !userData.token) {
         console.error("Google auth: Missing user data or token");
         return res.redirect(
-          "http://localhost:3000/login?error=missing_user_data"
+          `${
+            process.env.FRONTEND_URL || "http://localhost:3000"
+          }/login?error=missing_user_data`
         );
       }
 
       console.log(`Google auth successful for: ${userData.user.email}`);
 
-      const redirectUrl = `http://localhost:3000/auth/callback?token=${
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const redirectUrl = `${frontendUrl}/auth/callback?token=${
         userData.token
       }&name=${encodeURIComponent(
         userData.user.name
@@ -101,7 +108,11 @@ app.get(
       res.redirect(redirectUrl);
     } catch (error) {
       console.error("Google callback error:", error);
-      res.redirect("http://localhost:3000/login?error=callback_error");
+      res.redirect(
+        `${
+          process.env.FRONTEND_URL || "http://localhost:3000"
+        }/login?error=callback_error`
+      );
     }
   }
 );
