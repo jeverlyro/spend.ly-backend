@@ -9,6 +9,8 @@ const connectDB = require("./config/db");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const authService = require("./services/authService");
+const transactionRoutes = require("./routes/transactionRoutes");
+const authController = require("./controllers/authController");
 
 require("dotenv").config();
 
@@ -45,12 +47,23 @@ app.use((req, res, next) => {
 
 app.use(passport.initialize());
 
+// Add debug logs for Google OAuth configuration
+console.log("Google OAuth Configuration:");
+console.log(`- Client ID exists: ${!!process.env.GOOGLE_CLIENT_ID}`);
+console.log(`- Client Secret exists: ${!!process.env.GOOGLE_CLIENT_SECRET}`);
+console.log(`- Callback URL: ${process.env.GOOGLE_CALLBACK_URL || "Not set"}`);
+console.log(`- Backend URL: ${process.env.BACKEND_URL || "Not set"}`);
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:5000/api/auth/google/callback",
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL ||
+        `${
+          process.env.BACKEND_URL || "http://localhost:5000"
+        }/api/auth/google/callback`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -72,7 +85,7 @@ app.use("/users", usersRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/support", supportRouter);
 app.use("/api", walletRoutes);
-app.use("/api/complaints", complaintRoutes);
+app.use("/api", transactionRoutes);
 
 app.get(
   "/api/auth/google",
@@ -81,9 +94,22 @@ app.get(
 
 app.get(
   "/api/auth/google/callback",
+  (req, res, next) => {
+    // Debug logging for callback
+    console.log("Google OAuth Callback received:");
+    console.log(`- Query parameters: ${JSON.stringify(req.query)}`);
+    console.log(
+      `- Using callback URL: ${
+        process.env.GOOGLE_CALLBACK_URL || "default URL"
+      }`
+    );
+    next();
+  },
   passport.authenticate("google", {
     session: false,
-    failureRedirect: "http://localhost:3000/login?error=google_auth_failed",
+    failureRedirect: `${
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    }/login?error=google_auth_failed`,
   }),
   (req, res) => {
     try {
@@ -92,13 +118,16 @@ app.get(
       if (!userData || !userData.token) {
         console.error("Google auth: Missing user data or token");
         return res.redirect(
-          "http://localhost:3000/login?error=missing_user_data"
+          `${
+            process.env.FRONTEND_URL || "http://localhost:3000"
+          }/login?error=missing_user_data`
         );
       }
 
       console.log(`Google auth successful for: ${userData.user.email}`);
 
-      const redirectUrl = `http://localhost:3000/auth/callback?token=${
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const redirectUrl = `${frontendUrl}/auth/callback?token=${
         userData.token
       }&name=${encodeURIComponent(
         userData.user.name
@@ -109,10 +138,33 @@ app.get(
       res.redirect(redirectUrl);
     } catch (error) {
       console.error("Google callback error:", error);
-      res.redirect("http://localhost:3000/login?error=callback_error");
+      res.redirect(
+        `${
+          process.env.FRONTEND_URL || "http://localhost:3000"
+        }/login?error=callback_error`
+      );
     }
   }
 );
+
+app.post("/api/auth/forgot-password", authController.forgotPassword);
+app.post("/api/auth/reset-password", authController.resetPassword);
+
+app.get("/api/debug-env", (req, res) => {
+  res.json({
+    environment: process.env.NODE_ENV || "Not set",
+    google: {
+      clientIdExists: !!process.env.GOOGLE_CLIENT_ID,
+      clientSecretExists: !!process.env.GOOGLE_CLIENT_SECRET,
+      callbackUrl: process.env.GOOGLE_CALLBACK_URL || "Not set",
+    },
+    urls: {
+      backendUrl: process.env.BACKEND_URL || "Not set",
+      frontendUrl: process.env.FRONTEND_URL || "Not set",
+    },
+    serverUrl: `${req.protocol}://${req.get("host")}`,
+  });
+});
 
 app.use((req, res, next) => {
   console.log(`404 Not Found: ${req.method} ${req.originalUrl}`);
