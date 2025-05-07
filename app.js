@@ -41,14 +41,23 @@ app.use((req, res, next) => {
 
 app.use(passport.initialize());
 
+// Add debug logs for Google OAuth configuration
+console.log("Google OAuth Configuration:");
+console.log(`- Client ID exists: ${!!process.env.GOOGLE_CLIENT_ID}`);
+console.log(`- Client Secret exists: ${!!process.env.GOOGLE_CLIENT_SECRET}`);
+console.log(`- Callback URL: ${process.env.GOOGLE_CALLBACK_URL || "Not set"}`);
+console.log(`- Backend URL: ${process.env.BACKEND_URL || "Not set"}`);
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${
-        process.env.BACKEND_URL || "http://localhost:5000"
-      }/api/auth/google/callback`,
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL ||
+        `${
+          process.env.BACKEND_URL || "http://localhost:5000"
+        }/api/auth/google/callback`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -75,6 +84,17 @@ app.get(
 
 app.get(
   "/api/auth/google/callback",
+  (req, res, next) => {
+    // Debug logging for callback
+    console.log("Google OAuth Callback received:");
+    console.log(`- Query parameters: ${JSON.stringify(req.query)}`);
+    console.log(
+      `- Using callback URL: ${
+        process.env.GOOGLE_CALLBACK_URL || "default URL"
+      }`
+    );
+    next();
+  },
   passport.authenticate("google", {
     session: false,
     failureRedirect: `${
@@ -119,6 +139,22 @@ app.get(
 
 app.post("/api/auth/forgot-password", authController.forgotPassword);
 app.post("/api/auth/reset-password", authController.resetPassword);
+
+app.get("/api/debug-env", (req, res) => {
+  res.json({
+    environment: process.env.NODE_ENV || "Not set",
+    google: {
+      clientIdExists: !!process.env.GOOGLE_CLIENT_ID,
+      clientSecretExists: !!process.env.GOOGLE_CLIENT_SECRET,
+      callbackUrl: process.env.GOOGLE_CALLBACK_URL || "Not set",
+    },
+    urls: {
+      backendUrl: process.env.BACKEND_URL || "Not set",
+      frontendUrl: process.env.FRONTEND_URL || "Not set",
+    },
+    serverUrl: `${req.protocol}://${req.get("host")}`,
+  });
+});
 
 app.use((req, res, next) => {
   console.log(`404 Not Found: ${req.method} ${req.originalUrl}`);
